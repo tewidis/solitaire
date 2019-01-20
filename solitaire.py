@@ -7,10 +7,25 @@ def main():
 
     board.print();
 
+    test_is_valid_move(board);
+
+def test_is_valid_move(board):
+    if board.is_valid_move(Card(3, 'D', 'Red'), Card(4, 'C', 'Black'), 'build'):
+        print('PASS');
+    if board.is_valid_move(Card(13, 'D', 'Red'), Card(-1, '', ''), 'build'):
+        print('PASS');
+    if not board.is_valid_move(Card(3, 'D', 'Red'), Card(4, 'D', 'Red'), 'build'):
+        print('PASS');
+    if board.is_valid_move(Card(3, 'D', 'Red'), Card(2, 'D', 'Red'), 'suit'):
+        print('PASS');
+    if board.is_valid_move(Card(1, 'D', 'Red'), Card(-1, '', ''), 'suit'):
+        print('PASS');
+    if not board.is_valid_move(Card(3, 'D', 'Red'), Card(4, 'C', 'Black'), 'suit'):
+        print('PASS');
+
 class Board:
     # creates a solitare board
     def __init__(self, deck):
-        self.talon = [];
         self.talon_idx = 0;
         self.pile = [];
         self.suit_stacks = [[], [], [], []];
@@ -43,10 +58,7 @@ class Board:
             print(build_str);
 
         print('Talon:');
-        if len(self.talon) == 0:
-            print('[ ]');
-        else:
-            print(self.talon[self.talon_idx]);
+        self.pile[self.talon_idx].print();
 
         print('Suit stacks:');
         suit_str = '';
@@ -57,6 +69,40 @@ class Board:
                 suit_str = suit_str + self.suit_stacks[i].get_str();
         print(suit_str);
 
+        print('Pile:')
+        pile_str = '';
+        if len(self.pile) == 0:
+            print('[ ]');
+        else:
+            for i in range(len(self.pile)):
+                pile_str = pile_str + self.pile[i].get_str() + ' ';
+        print(pile_str);
+
+    def flip_card_from_pile(self):
+        self.talon_idx = (self.talon_idx + 1) % len(self.pile);
+
+    # this tests if playing card1 on card2 is a valid move
+    def is_valid_move(self, card1, card2, dest):
+        # are we playing it on a build_stack or suit_stack?
+        if dest == 'build':
+            # this is the general case
+            if card1.color != card2.color and card1.value == card2.value - 1:
+                return True;
+            # if card1 is a king and card2 is empty, it's valid
+            elif card1.value == 13 and card2.value == -1:
+                return True;
+            else:
+                return False;
+        elif dest == 'suit':
+            # general case
+            if card1.suit == card2.suit and card1.value == card2.value + 1:
+                return True;
+            # if card1 is an ace and card2 is empty, it's valid
+            elif card1.value == 1 and card2.value == -1:
+                return True;
+            else:
+                return False;
+
 class Deck:
     # makes a new deck of cards
     # the deck will be in order until shuffled
@@ -66,7 +112,10 @@ class Deck:
         suits = ['C', 'D', 'H', 'S'];
         for i in suits:
             for j in range(1,14):
-                self.list.append(Card(j, i));
+                if i == 'C' or i == 'S':
+                    self.list.append(Card(j, i, 'Black'));
+                elif i == 'D' or i == 'H':
+                    self.list.append(Card(j, i, 'Red'));
 
     # prints out the deck
     def print(self):
@@ -91,9 +140,11 @@ class Card:
     # makes a new card consisting of a suit and value
     # 1 is Ace, 11 is Jack, 12 is Queen, 13 is King
     # this makes comparisons between cards easy
-    def __init__(self, value, suit):
+    # a value of -1 is used to represent an empty space
+    def __init__(self, value, suit, color):
         self.value = value;
         self.suit = suit;
+        self.color = color;
 
     # gets a string representation of the card
     def get_str(self):
@@ -110,7 +161,7 @@ class Card:
 
     # prints out the card
     def print(self):
-       print(self.get_str)
+       print(self.get_str())
 
 if __name__ == "__main__":
     main()
