@@ -7,6 +7,10 @@ def main():
 
     board.print();
 
+    print('Valid moves:');
+
+    print(board.get_valid_moves());
+
 class Board:
     # creates a solitare board
     def __init__(self, deck):
@@ -23,6 +27,11 @@ class Board:
 
         for i in range(0,24):
             self.pile.append(deck.get_next());
+
+        self.suit_stacks[0].append(Card(-1, 'C', '', True));
+        self.suit_stacks[1].append(Card(-1, 'D', '', True));
+        self.suit_stacks[2].append(Card(-1, 'H', '', True));
+        self.suit_stacks[3].append(Card(-1, 'S', '', True));
 
     # prints out the board
     def print(self):
@@ -54,7 +63,7 @@ class Board:
         print('Suit stacks:');
         suit_str = '';
         for i in range(len(self.suit_stacks)):
-            if len(self.suit_stacks[i]) == 0:
+            if self.suit_stacks[i][-1].value == -1:
                 suit_str = suit_str + '[ ]';
             else:
                 suit_str = suit_str + self.suit_stacks[i].get_str();
@@ -89,11 +98,48 @@ class Board:
             # general case
             if card1.suit == card2.suit and card1.value == card2.value + 1:
                 return True;
-            # if card1 is an ace and card2 is empty, it's valid
-            elif card1.value == 1 and card2.value == -1:
+            # if card1 is an ace and card2 is empty and same suit, it's valid
+            # the same suit is a trick to reduce the move search space for Aces
+            elif card1.value == 1 and card2.value == -1 and card1.suit == card2.suit:
                 return True;
             else:
                 return False;
+
+    # analyzes all possible moves and returns a list of all valid moves
+    def get_valid_moves(self):
+        valid_moves = [];
+        # look at the cards in the build stacks
+        for i in range(len(self.build_stacks)):
+            for j in range(len(self.build_stacks[i])):
+                if self.build_stacks[i][j].face_up:
+                    card1 = self.build_stacks[i][-1];
+                    # see if the card can be played on any of the build stacks
+                    for j in range(len(self.build_stacks)):
+                        if i != j:
+                            card2 = self.build_stacks[j][-1];
+                            if self.is_valid_move(card1, card2, 'build'):
+                                valid_moves.append(card1.get_str() + '->' + card2.get_str());
+
+            # see if the card can be played on any of the suit stacks
+            for j in range(len(self.suit_stacks)):
+                card2 = self.suit_stacks[j][-1];
+                if self.is_valid_move(card1, card2, 'suit'):
+                    valid_moves.append(card1.get_str() + '->' + card2.get_str());
+
+        # look at the card in the talon
+        card1 = self.pile[self.talon_idx];
+        for i in range(len(self.build_stacks)):
+            card2 = self.build_stacks[j][-1];
+            if self.is_valid_move(card1, card2, 'build'):
+                valid_moves.append(card1.get_str() + '->' + card2.get_str());
+
+        for j in range(len(self.suit_stacks)):
+            card2 = self.suit_stacks[j][-1];
+            if self.is_valid_move(card1, card2, 'suit'):
+                valid_moves.append(card1.get_str() + '->' + card2.get_str());
+
+        return valid_moves;
+
 
 class Deck:
     # makes a new deck of cards
