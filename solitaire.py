@@ -7,8 +7,6 @@ def main():
 
     board.print();
 
-    test_is_valid_move(board);
-
 class Board:
     # creates a solitare board
     def __init__(self, deck):
@@ -18,7 +16,10 @@ class Board:
         self.build_stacks = [[], [], [], [], [], [], []];
         for i in range (0,7):
             for j in range(0,i+1):
-                self.build_stacks[i].append(deck.get_next());
+                next_card = deck.get_next();
+                if j == i:
+                    next_card.flip();
+                self.build_stacks[i].append(next_card);
 
         for i in range(0,24):
             self.pile.append(deck.get_next());
@@ -37,10 +38,14 @@ class Board:
                 if i >= len(self.build_stacks[j]):
                     build_str = build_str + '    ';
                 else:
-                    if len(self.build_stacks[j][i].get_str()) == 2:
-                        build_str = build_str + self.build_stacks[j][i].get_str() + '  ';
+                    if not self.build_stacks[j][i].face_up:
+                        append_str = '--';
                     else:
-                        build_str = build_str + self.build_stacks[j][i].get_str() + ' ';
+                        append_str = self.build_stacks[j][i].get_str();
+                    if len(self.build_stacks[j][i].get_str()) == 2:
+                        build_str = build_str + append_str + '  ';
+                    else:
+                        build_str = build_str + append_str + ' ';
             print(build_str);
 
         print('Talon:');
@@ -64,6 +69,7 @@ class Board:
                 pile_str = pile_str + self.pile[i].get_str() + ' ';
         print(pile_str);
 
+    # increments the talon pointer to get the next card
     def flip_card_from_pile(self):
         self.talon_idx = (self.talon_idx + 1) % len(self.pile);
 
@@ -99,9 +105,9 @@ class Deck:
         for i in suits:
             for j in range(1,14):
                 if i == 'C' or i == 'S':
-                    self.list.append(Card(j, i, 'Black'));
+                    self.list.append(Card(j, i, 'Black', False));
                 elif i == 'D' or i == 'H':
-                    self.list.append(Card(j, i, 'Red'));
+                    self.list.append(Card(j, i, 'Red', False));
 
     # prints out the deck
     def print(self):
@@ -127,10 +133,11 @@ class Card:
     # 1 is Ace, 11 is Jack, 12 is Queen, 13 is King
     # this makes comparisons between cards easy
     # a value of -1 is used to represent an empty space
-    def __init__(self, value, suit, color):
+    def __init__(self, value, suit, color, face_up):
         self.value = value;
         self.suit = suit;
         self.color = color;
+        self.face_up = face_up;
 
     # gets a string representation of the card
     def get_str(self):
@@ -148,6 +155,10 @@ class Card:
     # prints out the card
     def print(self):
        print(self.get_str())
+
+    # flips a card over
+    def flip(self):
+        self.face_up = not self.face_up;
 
 if __name__ == "__main__":
     main()
