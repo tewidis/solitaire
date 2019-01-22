@@ -112,7 +112,7 @@ class Board:
         for i in range(len(self.build_stacks)):
             for j in range(len(self.build_stacks[i])):
                 if self.build_stacks[i][j].face_up:
-                    card1 = self.build_stacks[i][-1];
+                    card1 = self.build_stacks[i][j];
                     # see if the card can be played on any of the build stacks
                     for j in range(len(self.build_stacks)):
                         if i != j:
@@ -137,6 +137,10 @@ class Board:
             card2 = self.suit_stacks[j][-1];
             if self.is_valid_move(card1, card2, 'suit'):
                 valid_moves.append(card1.get_str() + '->' + card2.get_str());
+
+        # you can always flip a card from the pile to the talon
+        next_talon_idx = self.talon_idx + 1 % len(self.pile);
+        valid_moves.append('(' + self.pile[self.talon_idx].get_str() + '->' + self.pile[next_talon_idx].get_str() + ')');
 
         return valid_moves;
 
