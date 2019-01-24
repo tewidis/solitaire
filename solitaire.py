@@ -121,17 +121,32 @@ class Board:
     def get_valid_moves(self):
         valid_moves = [];
         card_positions = [];
+        # # look at the cards in the build stacks
+        # for i in range(len(self.build_stacks)):
+        #     card1 = self.build_stacks[i][-1];
+        #     for j in range(len(self.build_stacks)):
+        #         # see if the card can be played on any of the build stacks
+        #         if i != j:
+        #             card2 = self.build_stacks[j][-1];
+        #             if self.is_valid_move(card1, card2, 'build'):
+        #                 valid_moves.append(card1.get_str() + '->' + card2.get_str());
+        #                 new_move = Move(i, len(self.build_stacks[i])-1, j, len(self.build_stacks[j])-1, 'build', 'build');
+        #                 card_positions.append(new_move);
+
+
         # look at the cards in the build stacks
         for i in range(len(self.build_stacks)):
-            card1 = self.build_stacks[i][-1];
-            for j in range(len(self.build_stacks)):
-                # see if the card can be played on any of the build stacks
-                if i != j:
-                    card2 = self.build_stacks[j][-1];
-                    if self.is_valid_move(card1, card2, 'build'):
-                        valid_moves.append(card1.get_str() + '->' + card2.get_str());
-                        new_move = Move(i, len(self.build_stacks[i])-1, j, len(self.build_stacks[j])-1, 'build', 'build');
-                        card_positions.append(new_move);
+            for j in range(len(self.build_stacks[i])):
+                if self.build_stacks[i][j].face_up:
+                    card1 = self.build_stacks[i][j];
+                    for k in range(len(self.build_stacks)):
+                        # see if the card can be played on any of the build stacks
+                        if i != k:
+                            card2 = self.build_stacks[k][-1];
+                            if self.is_valid_move(card1, card2, 'build'):
+                                valid_moves.append(card1.get_str() + '->' + card2.get_str());
+                                new_move = Move(i, j, k, len(self.build_stacks[k])-1, 'build', 'build');
+                                card_positions.append(new_move);
 
         # see if the card can be played on any of the suit stacks
         for i in range(len(self.build_stacks)):
@@ -173,7 +188,9 @@ class Board:
     def make_move(self, move):
         if move.src == 'build':
             if move.dest == 'build':
-                self.build_stacks[move.x2].append(self.build_stacks[move.x1][move.y1]);
+                for i in range(move.y1, len(self.build_stacks[move.x1])):
+                    self.build_stacks[move.x2].append(self.build_stacks[move.x1][i]);
+
                 del(self.build_stacks[move.x1][-1]);
                 if len(self.build_stacks[move.x1]) != 0:
                     self.build_stacks[move.x1][-1].face_up = True;
