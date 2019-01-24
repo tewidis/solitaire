@@ -1,5 +1,6 @@
 from card import Card
 from deck import Deck
+from move import Move
 
 def main():
     deck = Deck();
@@ -12,7 +13,14 @@ def main():
 
     print('Valid moves:');
 
-    print(board.get_valid_moves());
+    valid_moves = board.get_valid_moves();
+
+    for i in range(len(valid_moves)):
+        valid_moves[i].print();
+
+    board.make_move(valid_moves[0]);
+
+    board.print();
 
 class Board:
     # creates a solitare board
@@ -52,12 +60,13 @@ class Board:
                 else:
                     if not self.build_stacks[j][i].face_up:
                         append_str = '--';
-                    else:
-                        append_str = self.build_stacks[j][i].get_str();
-                    if len(self.build_stacks[j][i].get_str()) == 2:
                         build_str = build_str + append_str + '  ';
                     else:
-                        build_str = build_str + append_str + ' ';
+                        append_str = self.build_stacks[j][i].get_str();
+                        if len(self.build_stacks[j][i].get_str()) == 2:
+                            build_str = build_str + append_str + '  ';
+                        else:
+                            build_str = build_str + append_str + ' ';
             print(build_str);
 
         print('Talon:');
@@ -69,7 +78,7 @@ class Board:
             if self.suit_stacks[i][-1].value == -1:
                 suit_str = suit_str + '[ ]';
             else:
-                suit_str = suit_str + self.suit_stacks[i].get_str();
+                suit_str = suit_str + self.suit_stacks[i][-1].get_str();
         print(suit_str);
 
         print('Pile:')
@@ -108,44 +117,80 @@ class Board:
             else:
                 return False;
 
-    # analyzes all possible moves and returns a list of all valid moves
+    # analyzes all possible moves, prints the valid ones, and returns an array of positions
     def get_valid_moves(self):
         valid_moves = [];
+        card_positions = [];
         # look at the cards in the build stacks
         for i in range(len(self.build_stacks)):
-            for j in range(len(self.build_stacks[i])):
-                if self.build_stacks[i][j].face_up:
-                    card1 = self.build_stacks[i][j];
-                    # see if the card can be played on any of the build stacks
-                    for j in range(len(self.build_stacks)):
-                        if i != j:
-                            card2 = self.build_stacks[j][-1];
-                            if self.is_valid_move(card1, card2, 'build'):
-                                valid_moves.append(card1.get_str() + '->' + card2.get_str());
+            card1 = self.build_stacks[i][-1];
+            for j in range(len(self.build_stacks)):
+                # see if the card can be played on any of the build stacks
+                if i != j:
+                    card2 = self.build_stacks[j][-1];
+                    if self.is_valid_move(card1, card2, 'build'):
+                        valid_moves.append(card1.get_str() + '->' + card2.get_str());
+                        new_move = Move(i, len(self.build_stacks[i])-1, j, len(self.build_stacks[j])-1, 'build', 'build');
+                        card_positions.append(new_move);
 
-            # see if the card can be played on any of the suit stacks
+        # see if the card can be played on any of the suit stacks
+        for i in range(len(self.build_stacks)):
+            card1 = self.build_stacks[i][-1];
             for j in range(len(self.suit_stacks)):
                 card2 = self.suit_stacks[j][-1];
                 if self.is_valid_move(card1, card2, 'suit'):
                     valid_moves.append(card1.get_str() + '->' + card2.get_str());
+                    new_move = Move(i, len(self.build_stacks[i])-1, j, len(self.suit_stacks[j])-1, 'build', 'suit');
+                    card_positions.append(new_move);
 
         # look at the card in the talon
         card1 = self.pile[self.talon_idx];
         for i in range(len(self.build_stacks)):
-            card2 = self.build_stacks[j][-1];
+            card2 = self.build_stacks[i][-1];
             if self.is_valid_move(card1, card2, 'build'):
                 valid_moves.append(card1.get_str() + '->' + card2.get_str());
+                new_move = Move(-1, -1, i, len(self.build_stacks[i])-1, 'talon', 'build');
+                card_positions.append(new_move);
 
         for j in range(len(self.suit_stacks)):
             card2 = self.suit_stacks[j][-1];
             if self.is_valid_move(card1, card2, 'suit'):
                 valid_moves.append(card1.get_str() + '->' + card2.get_str());
+                new_move = Move(i, j, j, len(self.suit_stacks[j])-1, 'talon', 'suit');
+                card_positions.append(new_move);
 
         # you can always flip a card from the pile to the talon
         next_talon_idx = self.talon_idx + 1 % len(self.pile);
         valid_moves.append('(' + self.pile[self.talon_idx].get_str() + '->' + self.pile[next_talon_idx].get_str() + ')');
+        new_move = Move(-1, -1, -1, -1, 'talon', 'talon');
+        card_positions.append(new_move);
 
-        return valid_moves;
+        print(valid_moves);
+
+        return card_positions;
+
+    # given two positions, moves the card at pos1 onto the card at pos2
+    def make_move(self, move):
+        if move.src == 'build':
+            if move.dest == 'build':
+                self.build_stacks[move.x2].append(self.build_stacks[move.x1][move.y1]);
+                del(self.build_stacks[move.x1][-1]);
+                if len(self.build_stacks[move.x1]) != 0:
+                    self.build_stacks[move.x1][-1].face_up = True;
+            elif move.dest == 'suit':
+                self.suit_stacks[move.x2].append(self.build_stacks[move.x1][move.y1]);
+                del(self.build_stacks[move.x1][-1]);
+                if len(self.build_stacks[move.x1]) != 0:
+                    self.build_stacks[move.x1][-1].face_up = True;
+        elif move.src == 'talon':
+            if move.dest == 'build':
+                self.build_stacks[move.x2].append(self.pile[self.talon_idx]);
+                del(self.pile[self.talon_idx]);
+            elif move.dest == 'suit':
+                self.suit_stacks[move.x2].append(self.pile[self.talon_idx]);
+                del(self.pile[self.talon_idx]);
+            elif move.dest == 'talon':
+                self.flip_card_from_pile();
 
 if __name__ == "__main__":
     main()
