@@ -5,7 +5,8 @@ from move import Move
 def main():
     deck = Deck();
 
-    deck.shuffle();
+    # un-winnable games aren't very useful to a solver
+    deck.make_winnable(); # deck.shuffle(); might not produce a winnable game.
 
     board = Board(deck);
 
@@ -15,12 +16,11 @@ def main():
 
     valid_moves = board.get_valid_moves();
 
-    for i in range(len(valid_moves)):
-        valid_moves[i].print();
-
     board.make_move(valid_moves[0]);
 
     board.print();
+
+    print(board.get_score());
 
 class Board:
     # creates a solitare board
@@ -121,18 +121,6 @@ class Board:
     def get_valid_moves(self):
         valid_moves = [];
         card_positions = [];
-        # # look at the cards in the build stacks
-        # for i in range(len(self.build_stacks)):
-        #     card1 = self.build_stacks[i][-1];
-        #     for j in range(len(self.build_stacks)):
-        #         # see if the card can be played on any of the build stacks
-        #         if i != j:
-        #             card2 = self.build_stacks[j][-1];
-        #             if self.is_valid_move(card1, card2, 'build'):
-        #                 valid_moves.append(card1.get_str() + '->' + card2.get_str());
-        #                 new_move = Move(i, len(self.build_stacks[i])-1, j, len(self.build_stacks[j])-1, 'build', 'build');
-        #                 card_positions.append(new_move);
-
 
         # look at the cards in the build stacks
         for i in range(len(self.build_stacks)):
@@ -190,7 +178,6 @@ class Board:
             if move.dest == 'build':
                 for i in range(move.y1, len(self.build_stacks[move.x1])):
                     self.build_stacks[move.x2].append(self.build_stacks[move.x1][i]);
-
                 del(self.build_stacks[move.x1][-1]);
                 if len(self.build_stacks[move.x1]) != 0:
                     self.build_stacks[move.x1][-1].face_up = True;
@@ -208,6 +195,26 @@ class Board:
                 del(self.pile[self.talon_idx]);
             elif move.dest == 'talon':
                 self.flip_card_from_pile();
+
+    # need to assign a score to the board to train a neural net
+    # the goal in draw 1 solitaire is to uncover all cards in the build stacks
+    # after that, winning is trivial
+    # picking the move that uncovers the most cards won't always win, but it's a start
+    # certain cards being uncovered are better than others
+    # * Aces can always be moved to uncover a card, so they're preferable
+    # Also need to figure out a lose/give up condition. I don't think this will win every time,
+    # so I need to define a time to stop trying to avoid taking too long
+    # a simple way to do this is just to set a limit on the number of moves. The winning solution
+    # to most games is less than 200 moves, this might be a reasonable place to start.
+    def get_score(self):
+        # going to start with a naive scoring system and go from there
+        face_down_cards = 0;
+        for i in range(len(self.build_stacks)):
+            for j in range(len(self.build_stacks[i])):
+                if not self.build_stacks[i][j].face_up:
+                    face_down_cards = face_down_cards + 1;
+        score = 28 - face_down_cards;
+        return score;
 
 if __name__ == "__main__":
     main()
